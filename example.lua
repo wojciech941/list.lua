@@ -25,7 +25,7 @@ end
 --// Remove item //--
 c:remove(3) -- deletes an items with the specified value from the list
 c:remove_if(function(v) -- deletes an items using the callback function
-	return (v % 2) == 0
+  return (v % 2) == 0
 end)
 
 --// Any //--
