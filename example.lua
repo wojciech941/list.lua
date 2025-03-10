@@ -1,3 +1,5 @@
+local list_t = require("list")
+
 --// Init //--
 local a = list_t() -- initializing an empty list
 local b = list_t { "a", "b", "c" } -- initialization by a table
