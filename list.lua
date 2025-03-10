@@ -201,3 +201,5 @@ local list_t = (function()
 
   return setmetatable(this, { __call = determinant })
 end)()
+
+return list_t
