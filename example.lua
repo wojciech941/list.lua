@@ -15,11 +15,11 @@ a:pop_front() -- deletes an item from the front of the list
 
 --// Iterator //--
 for v in b:begin() do -- iterator from the front to the back of the list
-	print(v) -- output: a, b, c
+  print(v) -- output: a, b, c
 end
 
 for v in b:rbegin() do -- iterator from the back to the front of the list
-	print(v) -- output: c, b, a
+  print(v) -- output: c, b, a
 end
 
 --// Remove item //--
