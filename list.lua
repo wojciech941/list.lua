@@ -1,6 +1,4 @@
 local list_t = (function()
-  local CONST_NODE = {} 
-
   local node_t = (function()
     local this = {}
 
@@ -67,16 +65,26 @@ local list_t = (function()
   end
 
   function this:pop_front()
-    if self.__size > 0 then
+    if self.__size > 1 then
       self.__size = self.__size - 1
-      return self.__head:pop()
+      local temp = self.__head.next
+      self.__head:pop()
+      self.__head = temp or self.__cnode
+    elseif self.__size == 1 then
+      self.__size = 0
+      self.__head, self.__tail = self.__cnode, self.__cnode
     end
   end
 
   function this:pop_back()
-    if self.__size > 0 then
+    if self.__size > 1 then
       self.__size = self.__size - 1
-      return self.__tail:pop()
+      local temp = self.__tail.prev
+      self.__tail:pop()
+      self.__tail = temp or self.__cnode
+    elseif self.__size == 1 then
+      self.__size = 0
+      self.__head, self.__tail = self.__cnode, self.__cnode
     end
   end
 
@@ -86,7 +94,7 @@ local list_t = (function()
       :: continue ::
       local node = iterator()
       if node and node.data then
-        if node.data == CONST_NODE then
+        if node.data == self.__cnode then
           goto continue
         end
         return node.data
@@ -100,7 +108,7 @@ local list_t = (function()
       :: continue ::
       local node = iterator()
       if node and node.data then
-        if node.data == CONST_NODE then
+        if node.data == self.__cnode then
           goto continue
         end
         return node.data
@@ -114,12 +122,15 @@ local list_t = (function()
       local node = iterator()
       if node and node.data == data then
         if self.__head == node then
-          self.__head = node.next
+          self.__head = node.next or self.__cnode
         elseif self.__tail == node then
-          self.__tail = node.prev
+          self.__tail = node.prev or self.__cnode
         end
         node:pop()
         self.__size = self.__size - 1
+        if self.__size == 0 then
+          self.__head, self.__tail = self.__cnode, self.__cnode
+        end
       end
     until not node
   end
@@ -128,20 +139,23 @@ local list_t = (function()
     local iterator = self.__head:begin()
     repeat
       local node = iterator()
-      if node and node.data ~= CONST_NODE and lambda(node.data) then
+      if node and node.data ~= self.__cnode and lambda(node.data) then
         if self.__head == node then
-          self.__head = node.next
+          self.__head = node.next or self.__cnode
         elseif self.__tail == node then
-          self.__tail = node.prev
+          self.__tail = node.prev or self.__cnode
         end
         node:pop()
         self.__size = self.__size - 1
+        if self.__size == 0 then
+          self.__head, self.__tail = self.__cnode, self.__cnode
+        end
       end
     until not node
   end
 
   function this:clear()
-    local node = node_t(CONST_NODE)
+    local node = node_t(self.__cnode)
     self.__head, self.__tail = node, node
     self.__size = 0
   end
@@ -169,7 +183,8 @@ local list_t = (function()
 
   local function constructor(data)
     local t = {}
-    local node = node_t(data or CONST_NODE)
+    t.__cnode = node_t()
+    local node = node_t(data or t.__cnode)
     t.__head = node
     t.__tail = node
     t.__size = 0
@@ -186,6 +201,7 @@ local list_t = (function()
         for i = 2, #args[1] do
           t:push_back(args[1][i])
         end
+        t.__tail = args[#args]
         t.__size = #args[1]
         return t
       end
@@ -201,5 +217,3 @@ local list_t = (function()
 
   return setmetatable(this, { __call = determinant })
 end)()
-
-return list_t
