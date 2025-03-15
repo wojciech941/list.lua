@@ -170,13 +170,23 @@ local list_t = (function()
   function this:crend()
   end
 
-  function this:emplace()
+  ---@any_iterator_t where
+  ---@any data
+  function this:emplace(where, data)
+    where.__data:push_back( node_t(data) )
+    self.__size = self.__size + 1
   end
 
-  function this:emplace_back()
+  ---@any data
+  function this:emplace_back(data)
+    self.__impl:push_front( node_t.data() )
+    self.__size = self.__size + 1
   end
 
-  function this:emplace_front()
+  ---@any data
+  function this:emplace_front(data)
+    self.__impl:push_back( node_t.data() )
+    self.__size = self.__size + 1
   end
 
   ---@return [boolean] size ~= 0
@@ -189,7 +199,21 @@ local list_t = (function()
     return forward_iterator_t(self.__impl)
   end
 
-  function this:erase()
+  ---@any_iterator_t where
+  ---
+  ---@any_iterator_t first
+  ---@any_iterator_t last
+  function this:erase(first, last)
+    if last then
+      while first ~= last do
+        local temp = first.__data
+        first = first + 1
+        temp:pop()
+      end
+    else
+      first.__data:pop()
+      self.__size = self.__size - 1
+    end
   end
 
   ---@return [node_t] front element
@@ -197,7 +221,6 @@ local list_t = (function()
     return self.__impl.__next
   end
 
-  -- does NOT WORK with uninitialized list
   ---@any_iterator_t where
   ---@table initializer_list
   ---
@@ -216,15 +239,18 @@ local list_t = (function()
         for _, v in ipairs(args[1]) do
           where.__data:push_back( node_t(v) )
           where = where + 1
+          self.__size = self.__size + 1
         end
       else
         where.__data:push_back( node_t(args[1]) )
         where = where + 1
+        self.__size = self.__size + 1
       end
     elseif #args == 2 then
       for i = 1, args[1] do
         where.__data:push_back( node_t(args[2]) )
         where = where + 1
+        self.__size = self.__size + 1
       end
     end
     return where
@@ -250,22 +276,14 @@ local list_t = (function()
   ---@any data
   function this:push_back(data)
     local node = node_t(data)
-    if self.__impl.__prev then
-      self.__impl:push_front(node)
-    else
-      self.__impl.__prev = self.__impl:push_back(node)
-    end
+    self.__impl:push_front(node)
     self.__size = self.__size + 1
   end
 
   ---@any data
   function this:push_front(data)
     local node = node_t(data)
-    if self.__impl.__next then
-      self.__impl:push_back(node)
-    else
-      self.__impl.__next = node
-    end
+    self.__impl:push_back(node)
     self.__size = self.__size + 1
   end
 
@@ -326,6 +344,7 @@ local list_t = (function()
   ---@list_t other
   function this:swap(other)
     self.__impl, other.__impl = other.__impl, self.__impl
+    self.__size, other.__size = other.__size, self.__size
   end
 
   ---@function lambda
@@ -360,6 +379,8 @@ local list_t = (function()
     local args = { ... }
     local list = {}
     list.__impl = node_t(CONST_EMPTY_NODE_DATA)
+    list.__impl.__next = list.__impl
+    list.__impl.__prev = list.__impl
     list.__size = 0
     setmetatable(list, { __index = this })
 
