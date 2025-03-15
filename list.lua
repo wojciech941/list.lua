@@ -323,11 +323,27 @@ local list_t = (function()
   function this:splice()
   end
 
+  ---@list_t other
   function this:swap(other)
     self.__impl, other.__impl = other.__impl, self.__impl
   end
 
+  ---@function lambda
+  ---
+  ---@nil empty arguments
   function this:unique(lambda)
+    if not self.__impl.__next then
+      return
+    end
+    local a = self.__impl.__next
+    local b = a.__next
+    while (a and b) and a ~= self.__impl and b ~= self.__impl do
+      if lambda and lambda(a[0], b[0]) or (a[0] == b[0]) then
+        a:pop()
+        self.__size = self.__size - 1
+      end
+      a, b = b, b.__next
+    end
   end
 
   ---@nil empty initializer
