@@ -1,25 +1,35 @@
 local list_t = (function()
   local CONST_EMPTY_NODE_DATA = {}
 
-  local forward_iterator_t = (function()
+  local iterator_t = (function()
     local this = {}
     local meta = {}
 
-    function meta:__call()
-      if self and self.__data and self.__data[0] ~= CONST_EMPTY_NODE_DATA then
-        local temp = self.__data
-        self = self + 1
-        return temp
+    local function recreate_call_iterator()
+      return coroutine.wrap(function(self)
+        while self and self.__data and self.__data[0] ~= CONST_EMPTY_NODE_DATA do
+          coroutine.yield(self)
+          self = self + 1
+        end
+        getmetatable(self).__call = recreate_call_iterator()
+      end)
+    end
+
+    meta.__call = recreate_call_iterator()
+
+    function meta:__index(k)
+      if k == 0 then
+        return rawget(self, "__data")[0]
+      elseif k == "__basetype" then
+        return "iterator_t"
+      elseif k == "__type" then
+        return "iterator_t"
       end
     end
 
-    function meta:__index(k)
-      if k == "__basetype" then
-        return "iterator_t"
-      elseif k == "__type" then
-        return "forward_iterator_t"
-      else
-        return rawget(self, "__data")
+    function meta:__newindex(k, v)
+      if k == 0 then
+        rawget(self, "__data")[k] = v
       end
     end
 
@@ -27,7 +37,14 @@ local list_t = (function()
       if self.__data then
         self.__data = self.__data + 1
       end
-      return self.__data and self
+      return self
+    end
+
+    function meta:__sub()
+      if self.__data then
+        self.__data = self.__data - 1
+      end
+      return self
     end
 
     function meta:__eq(other)
@@ -49,21 +66,31 @@ local list_t = (function()
     local this = {}
     local meta = {}
 
-    function meta:__call()
-      if self and self.__data[0] ~= CONST_EMPTY_NODE_DATA then
-        local temp = self.__data
-        self = self + 1
-        return temp
-      end
+    local function recreate_call_iterator()
+      return coroutine.wrap(function(self)
+        while self and self.__data and self.__data[0] ~= CONST_EMPTY_NODE_DATA do
+          coroutine.yield(self)
+          self = self + 1
+        end
+        getmetatable(self).__call = recreate_call_iterator()
+      end)
     end
 
-    function meta:__index()
-      if k == "__basetype" then
+    meta.__call = recreate_call_iterator()
+
+    function meta:__index(k)
+      if k == 0 then
+        return rawget(self, "__data")[0]
+      elseif k == "__basetype" then
         return "iterator_t"
       elseif k == "__type" then
         return "reverse_iterator_t"
-      else
-        return rawget(self, "__data")
+      end
+    end
+
+    function meta:__newindex(k, v)
+      if k == 0 then
+        rawget(self, "__data")[k] = v
       end
     end
 
@@ -71,7 +98,132 @@ local list_t = (function()
       if self.__data then
         self.__data = self.__data - 1
       end
-      return self.__data and self
+      return self
+    end
+
+    function meta:__sub()
+      if self.__data then
+        self.__data = self.__data + 1
+      end
+      return self
+    end
+
+    function meta:__eq(other)
+      return type(other) == "table" and self.__data == other.__data
+    end
+
+    local function constructor(_, data)
+      if data then
+        local reverse_iterator = {}
+        reverse_iterator.__data = data
+        return setmetatable(reverse_iterator, meta)
+      end
+    end
+
+    return setmetatable(this, { __call = constructor })
+  end)()
+
+  local const_iterator_t = (function()
+    local this = {}
+    local meta = {}
+
+    local function recreate_call_iterator()
+      return coroutine.wrap(function(self)
+        while self and self.__data and self.__data[0] ~= CONST_EMPTY_NODE_DATA do
+          coroutine.yield(self)
+          self = self + 1
+        end
+        getmetatable(self).__call = recreate_call_iterator()
+      end)
+    end
+
+    meta.__call = recreate_call_iterator()
+
+    function meta:__index(k)
+      if k == 0 then
+        return rawget(self, "__data")[0]
+      elseif k == "__basetype" then
+        return "iterator_t"
+      elseif k == "__type" then
+        return "const_iterator_t"
+      end
+    end
+
+    function meta:__newindex()
+      return
+    end
+
+    function meta:__add()
+      if self.__data then
+        self.__data = self.__data + 1
+      end
+      return self
+    end
+
+    function meta:__sub()
+      if self.__data then
+        self.__data = self.__data - 1
+      end
+      return self
+    end
+
+    function meta:__eq(other)
+      return type(other) == "table" and (self.__data == other.__data)
+    end
+
+    local function constructor(_, data)
+      if data then
+        local forward_iterator = {}
+        forward_iterator.__data = data
+        return setmetatable(forward_iterator, meta)
+      end
+    end
+
+    return setmetatable(this, { __call = constructor })
+  end)()
+
+  local const_reverse_iterator_t = (function()
+    local this = {}
+    local meta = {}
+
+    local function recreate_call_iterator()
+      return coroutine.wrap(function(self)
+        while self and self.__data and self.__data[0] ~= CONST_EMPTY_NODE_DATA do
+          coroutine.yield(self)
+          self = self + 1
+        end
+        getmetatable(self).__call = recreate_call_iterator()
+      end)
+    end
+
+    meta.__call = recreate_call_iterator()
+
+    function meta:__index(k)
+      if k == 0 then
+        return rawget(self, "__data")[0]
+      elseif k == "__basetype" then
+        return "iterator_t"
+      elseif k == "__type" then
+        return "const_reverse_iterator_t"
+      end
+    end
+
+    function meta:__newindex()
+      return
+    end
+
+    function meta:__add()
+      if self.__data then
+        self.__data = self.__data - 1
+      end
+      return self
+    end
+
+    function meta:__sub()
+      if self.__data then
+        self.__data = self.__data + 1
+      end
+      return self
     end
 
     function meta:__eq(other)
@@ -142,20 +294,24 @@ local list_t = (function()
   function this:assign()
   end
 
-  ---@return [node_t] back element
+  ---@return [node_t]
   function this:back()
     return self.__impl.__prev
   end
 
-  ---@return [forward_iterator_t]
+  ---@return [iterator_t]
   function this:begin()
-    return forward_iterator_t(self.__impl.__next)
+    return iterator_t(self.__impl.__next)
   end
 
+  ---@return [const_iterator_t]
   function this:cbegin()
+    return const_iterator_t(self.__impl.__next)
   end
 
+  ---@return [const_iterator_t]
   function this:cend()
+    return const_iterator_t(self.__impl)
   end
 
   function this:clear()
@@ -164,10 +320,14 @@ local list_t = (function()
     self.__size = 0
   end
 
+  ---@return [const_reverse_iterator_t]
   function this:crbegin()
+    return const_reverse_iterator_t(self.__impl.__prev)
   end
 
+  ---@return [const_reverse_iterator_t]
   function this:crend()
+    return const_reverse_iterator_t(self.__impl)
   end
 
   ---@any_iterator_t where
@@ -179,24 +339,24 @@ local list_t = (function()
 
   ---@any data
   function this:emplace_back(data)
-    self.__impl:push_front( node_t.data() )
+    self.__impl:push_front( node_t(data) )
     self.__size = self.__size + 1
   end
 
   ---@any data
   function this:emplace_front(data)
-    self.__impl:push_back( node_t.data() )
+    self.__impl:push_back( node_t(data) )
     self.__size = self.__size + 1
   end
 
-  ---@return [boolean] size ~= 0
+  ---@return [boolean]
   function this:empty()
     return self.__size == 0
   end
 
-  ---@return [forward_iterator_t]
+  ---@return [iterator_t]
   function this:end_()
-    return forward_iterator_t(self.__impl)
+    return iterator_t(self.__impl)
   end
 
   ---@any_iterator_t where
@@ -216,21 +376,27 @@ local list_t = (function()
     end
   end
 
-  ---@return [node_t] front element
+  ---@return [node_t]
   function this:front()
     return self.__impl.__next
   end
 
   ---@any_iterator_t where
   ---@table initializer_list
+  ---@return [any_iterator_t]
   ---
   ---@any_iterator_t where
   ---@any value
+  ---@return [any_iterator_t]
   ---
   ---@any_iterator_t where
-  ---@number count 
+  ---@number count
   ---@any value
+  ---@return [any_iterator_t]
   ---
+  ---@any_iterator_t where
+  ---@any_iterator_t first
+  ---@any_iterator_t last
   ---@return [any_iterator_t]
   function this:insert(where, ...)
     local args = { ... }
@@ -247,16 +413,24 @@ local list_t = (function()
         self.__size = self.__size + 1
       end
     elseif #args == 2 then
-      for i = 1, args[1] do
-        where.__data:push_back( node_t(args[2]) )
-        where = where + 1
-        self.__size = self.__size + 1
+      if type(args[1]) == "number" then
+        for i = 1, args[1] do
+          where.__data:push_back( node_t(args[2]) )
+          where = where + 1
+          self.__size = self.__size + 1
+        end
+      else
+        while args[1] ~= args[2] do
+          local node = args[1].__data
+          where.__data:push_front( node_t(node[0]) )
+          args[1] = args[1] + 1
+        end
       end
     end
     return where
   end
 
-  function this:merge(lambda)
+  function this:merge()
   end
 
   function this:pop_back()
@@ -330,7 +504,7 @@ local list_t = (function()
     self.__impl.__next, self.__impl.__prev = self.__impl.__prev, self.__impl.__next
   end
 
-  ---@return [number] size
+  ---@return [number]
   function this:size()
     return self.__size
   end
@@ -338,7 +512,41 @@ local list_t = (function()
   function this:sort()
   end
 
-  function this:splice()
+  ---@any_iterator_t where
+  ---@list_t source
+  ---
+  ---@any_iterator_t where
+  ---@list_t source
+  ---@any_iterator_t iter 
+  ---
+  ---@any_iterator_t where
+  ---@list_t source
+  ---@any_iterator_t first
+  ---@any_iterator_t last 
+  function this:splice(where, source, ...)
+    local args = { ... }
+    if #args == 0 then
+      local node = source.__impl.__next
+      while node and node[0] ~= CONST_EMPTY_NODE_DATA do
+        where.__data:push_front( node_t(node[0]) )
+        local temp = node.__next
+        node:pop()
+        node = temp
+      end
+    elseif #args == 1 then
+      local node = args[1].__data
+      if node and node[0] ~= CONST_EMPTY_NODE_DATA then
+        where.__data:push_front( node_t(node[0]) )
+        node:pop()
+      end
+    elseif #args == 2 then
+      while args[1] ~= args[2] do
+        local node = args[1].__data
+        where.__data:push_front( node_t(node[0]) )
+        args[1] = args[1] + 1
+        node:pop()
+      end
+    end
   end
 
   ---@list_t other
@@ -347,9 +555,9 @@ local list_t = (function()
     self.__size, other.__size = other.__size, self.__size
   end
 
-  ---@function lambda
+  ---@nil
   ---
-  ---@nil empty arguments
+  ---@function lambda
   function this:unique(lambda)
     if not self.__impl.__next then
       return
@@ -365,15 +573,17 @@ local list_t = (function()
     end
   end
 
-  ---@nil empty initializer
+  ---@nil
+  ---@return [list_t]
   ---
   ---@table initializer_list
+  ---@return [list_t]
   ---
   ---@any_iterator_t first
   ---@any_iterator_t last
+  ---@return [list_t]
   ---
-  ---@(...) arguments initializer
-  ---
+  ---@(...)
   ---@return [list_t]
   local function constructor(_, ...)
     local args = { ... }
