@@ -1,296 +1,306 @@
-local list_t = (function()
+local iterator_t = (function()
+  local this = {}
+  local meta = {}
+
+  this.__basetype = "iterator_t"
+  this.__type     = "iterator_t"
+
+  local function recreate_call_iterator()
+    return coroutine.wrap(function(self)
+      while self and self.__data and not self.__data:is_empty() do
+        coroutine.yield(self)
+        self = self + 1
+      end
+      getmetatable(self).__call = recreate_call_iterator()
+    end)
+  end
+
+  meta.__call = recreate_call_iterator()
+
+  function meta:__index(k)
+    if k == 0 then
+      return rawget(self, "__data")[0]
+    else
+      return this[k]
+    end
+  end
+
+  function meta:__newindex(k, v)
+    if k == 0 then
+      self.__data[k] = v
+    end
+  end
+
+  function meta:__add()
+    if self.__data then
+      self.__data = self.__data + 1
+    end
+    return self
+  end
+
+  function meta:__sub()
+    if self.__data then
+      self.__data = self.__data - 1
+    end
+    return self
+  end
+
+  function meta:__eq(other)
+    return (type(other) == "table") and (self.__data == other.__data)
+  end
+
+  local function constructor(_, data)
+    if data then
+      local iterator = {}
+      iterator.__data = data
+      return setmetatable(iterator, meta)
+    end
+  end
+
+  return setmetatable(this, { __call = constructor })
+end)()
+
+local reverse_iterator_t = (function()
+  local this = {}
+  local meta = {}
+
+  this.__basetype = "iterator_t"
+  this.__type     = "reverse_iterator_t"
+
+  local function recreate_call_iterator()
+    return coroutine.wrap(function(self)
+      while self and self.__data and not self.__data:is_empty() do
+        coroutine.yield(self)
+        self = self + 1
+      end
+      getmetatable(self).__call = recreate_call_iterator()
+    end)
+  end
+
+  meta.__call = recreate_call_iterator()
+
+  function meta:__index(k)
+    if k == 0 then
+      return rawget(self, "__data")[0]
+    else
+      return this[k]
+    end
+  end
+
+  function meta:__newindex(k, v)
+    if k == 0 then
+      self.__data[k] = v
+    end
+  end
+
+  function meta:__add()
+    if self.__data then
+      self.__data = self.__data - 1
+    end
+    return self
+  end
+
+  function meta:__sub()
+    if self.__data then
+      self.__data = self.__data + 1
+    end
+    return self
+  end
+
+  function meta:__eq(other)
+    return type(other) == "table" and self.__data == other.__data
+  end
+
+  local function constructor(_, data)
+    if data then
+      local reverse_iterator = {}
+      reverse_iterator.__data = data
+      return setmetatable(reverse_iterator, meta)
+    end
+  end
+
+  return setmetatable(this, { __call = constructor })
+end)()
+
+local const_iterator_t = (function()
+  local this = {}
+  local meta = {}
+
+  this.__basetype = "iterator_t"
+  this.__type     = "const_iterator_t"
+
+  local function recreate_call_iterator()
+    return coroutine.wrap(function(self)
+      while self and self.__data and not self.__data:is_empty() do
+        coroutine.yield(self)
+        self = self + 1
+      end
+      getmetatable(self).__call = recreate_call_iterator()
+    end)
+  end
+
+  meta.__call = recreate_call_iterator()
+
+  function meta:__index(k)
+    if k == 0 then
+      return rawget(self, "__data")[0]
+    else
+      return this[k]
+    end
+  end
+
+  function meta:__newindex()
+    return
+  end
+
+  function meta:__add()
+    if self.__data then
+      self.__data = self.__data + 1
+    end
+    return self
+  end
+
+  function meta:__sub()
+    if self.__data then
+      self.__data = self.__data - 1
+    end
+    return self
+  end
+
+  function meta:__eq(other)
+    return type(other) == "table" and (self.__data == other.__data)
+  end
+
+  local function constructor(_, data)
+    if data then
+      local forward_iterator = {}
+      forward_iterator.__data = data
+      return setmetatable(forward_iterator, meta)
+    end
+  end
+
+  return setmetatable(this, { __call = constructor })
+end)()
+
+local const_reverse_iterator_t = (function()
+  local this = {}
+  local meta = {}
+
+  this.__basetype = "iterator_t"
+  this.__type     = "const_reverse_iterator_t"
+
+  local function recreate_call_iterator()
+    return coroutine.wrap(function(self)
+      while self and self.__data and not self.__data:is_empty() do
+        coroutine.yield(self)
+        self = self + 1
+      end
+      getmetatable(self).__call = recreate_call_iterator()
+    end)
+  end
+
+  meta.__call = recreate_call_iterator()
+
+  function meta:__index(k)
+    if k == 0 then
+      return rawget(self, "__data")[0]
+    else
+      return this[k]
+    end
+  end
+
+  function meta:__newindex()
+    return
+  end
+
+  function meta:__add()
+    if self.__data then
+      self.__data = self.__data - 1
+    end
+    return self
+  end
+
+  function meta:__sub()
+    if self.__data then
+      self.__data = self.__data + 1
+    end
+    return self
+  end
+
+  function meta:__eq(other)
+    return type(other) == "table" and self.__data == other.__data
+  end
+
+  local function constructor(_, data)
+    if data then
+      local const_reverse_iterator = {}
+      const_reverse_iterator.__data = data
+      return setmetatable(const_reverse_iterator, meta)
+    end
+  end
+
+  return setmetatable(this, { __call = constructor })
+end)()
+
+local node_t = (function()
+  local this = {}
+  local meta = {}
   local CONST_EMPTY_NODE_DATA = {}
 
-  local iterator_t = (function()
-    local this = {}
-    local meta = {}
+  meta.__index = this
 
-    local function recreate_call_iterator()
-      return coroutine.wrap(function(self)
-        while self and self.__data and self.__data[0] ~= CONST_EMPTY_NODE_DATA do
-          coroutine.yield(self)
-          self = self + 1
-        end
-        getmetatable(self).__call = recreate_call_iterator()
-      end)
+  function meta:__add()
+    return self.__next
+  end
+
+  function meta:__sub()
+    return self.__prev
+  end
+
+  function this:push_back(node)
+    if self.__next then
+      self.__next.__prev = node
     end
+    node.__next = self.__next
+    self.__next = node
+    node.__prev = self
+    return node
+  end
 
-    meta.__call = recreate_call_iterator()
-
-    function meta:__index(k)
-      if k == 0 then
-        return rawget(self, "__data")[0]
-      elseif k == "__basetype" then
-        return "iterator_t"
-      elseif k == "__type" then
-        return "iterator_t"
-      end
+  function this:push_front(node)
+    if self.__prev then
+      self.__prev.__next = node
     end
+    node.__prev = self.__prev
+    self.__prev = node
+    node.__next = self
+    return node
+  end
 
-    function meta:__newindex(k, v)
-      if k == 0 then
-        rawget(self, "__data")[k] = v
-      end
-    end
+  function this:pop()
+    if self.__prev then self.__prev.__next = self.__next end
+    if self.__next then self.__next.__prev = self.__prev end
+  end
 
-    function meta:__add()
-      if self.__data then
-        self.__data = self.__data + 1
-      end
-      return self
-    end
+  function this:is_empty()
+    return self[0] == CONST_EMPTY_NODE_DATA
+  end
 
-    function meta:__sub()
-      if self.__data then
-        self.__data = self.__data - 1
-      end
-      return self
-    end
+  function this:make_this_node_empty()
+    self[0] = CONST_EMPTY_NODE_DATA
+  end
 
-    function meta:__eq(other)
-      return type(other) == "table" and (self.__data == other.__data)
-    end
+  local function constructor(_, data)
+    local node = {}
+    node[0] = data
+    return setmetatable(node, meta)
+  end
 
-    local function constructor(_, data)
-      if data then
-        local forward_iterator = {}
-        forward_iterator.__data = data
-        return setmetatable(forward_iterator, meta)
-      end
-    end
+  return setmetatable(this, { __call = constructor })
+end)()
 
-    return setmetatable(this, { __call = constructor })
-  end)()
-
-  local reverse_iterator_t = (function()
-    local this = {}
-    local meta = {}
-
-    local function recreate_call_iterator()
-      return coroutine.wrap(function(self)
-        while self and self.__data and self.__data[0] ~= CONST_EMPTY_NODE_DATA do
-          coroutine.yield(self)
-          self = self + 1
-        end
-        getmetatable(self).__call = recreate_call_iterator()
-      end)
-    end
-
-    meta.__call = recreate_call_iterator()
-
-    function meta:__index(k)
-      if k == 0 then
-        return rawget(self, "__data")[0]
-      elseif k == "__basetype" then
-        return "iterator_t"
-      elseif k == "__type" then
-        return "reverse_iterator_t"
-      end
-    end
-
-    function meta:__newindex(k, v)
-      if k == 0 then
-        rawget(self, "__data")[k] = v
-      end
-    end
-
-    function meta:__add()
-      if self.__data then
-        self.__data = self.__data - 1
-      end
-      return self
-    end
-
-    function meta:__sub()
-      if self.__data then
-        self.__data = self.__data + 1
-      end
-      return self
-    end
-
-    function meta:__eq(other)
-      return type(other) == "table" and self.__data == other.__data
-    end
-
-    local function constructor(_, data)
-      if data then
-        local reverse_iterator = {}
-        reverse_iterator.__data = data
-        return setmetatable(reverse_iterator, meta)
-      end
-    end
-
-    return setmetatable(this, { __call = constructor })
-  end)()
-
-  local const_iterator_t = (function()
-    local this = {}
-    local meta = {}
-
-    local function recreate_call_iterator()
-      return coroutine.wrap(function(self)
-        while self and self.__data and self.__data[0] ~= CONST_EMPTY_NODE_DATA do
-          coroutine.yield(self)
-          self = self + 1
-        end
-        getmetatable(self).__call = recreate_call_iterator()
-      end)
-    end
-
-    meta.__call = recreate_call_iterator()
-
-    function meta:__index(k)
-      if k == 0 then
-        return rawget(self, "__data")[0]
-      elseif k == "__basetype" then
-        return "iterator_t"
-      elseif k == "__type" then
-        return "const_iterator_t"
-      end
-    end
-
-    function meta:__newindex()
-      return
-    end
-
-    function meta:__add()
-      if self.__data then
-        self.__data = self.__data + 1
-      end
-      return self
-    end
-
-    function meta:__sub()
-      if self.__data then
-        self.__data = self.__data - 1
-      end
-      return self
-    end
-
-    function meta:__eq(other)
-      return type(other) == "table" and (self.__data == other.__data)
-    end
-
-    local function constructor(_, data)
-      if data then
-        local forward_iterator = {}
-        forward_iterator.__data = data
-        return setmetatable(forward_iterator, meta)
-      end
-    end
-
-    return setmetatable(this, { __call = constructor })
-  end)()
-
-  local const_reverse_iterator_t = (function()
-    local this = {}
-    local meta = {}
-
-    local function recreate_call_iterator()
-      return coroutine.wrap(function(self)
-        while self and self.__data and self.__data[0] ~= CONST_EMPTY_NODE_DATA do
-          coroutine.yield(self)
-          self = self + 1
-        end
-        getmetatable(self).__call = recreate_call_iterator()
-      end)
-    end
-
-    meta.__call = recreate_call_iterator()
-
-    function meta:__index(k)
-      if k == 0 then
-        return rawget(self, "__data")[0]
-      elseif k == "__basetype" then
-        return "iterator_t"
-      elseif k == "__type" then
-        return "const_reverse_iterator_t"
-      end
-    end
-
-    function meta:__newindex()
-      return
-    end
-
-    function meta:__add()
-      if self.__data then
-        self.__data = self.__data - 1
-      end
-      return self
-    end
-
-    function meta:__sub()
-      if self.__data then
-        self.__data = self.__data + 1
-      end
-      return self
-    end
-
-    function meta:__eq(other)
-      return type(other) == "table" and self.__data == other.__data
-    end
-
-    local function constructor(_, data)
-      if data then
-        local reverse_iterator = {}
-        reverse_iterator.__data = data
-        return setmetatable(reverse_iterator, meta)
-      end
-    end
-
-    return setmetatable(this, { __call = constructor })
-  end)()
-
-  local node_t = (function()
-    local this = {}
-    local meta = {}
-
-    meta.__index = this
-
-    function meta:__add()
-      return self.__next
-    end
-
-    function meta:__sub()
-      return self.__prev
-    end
-
-    function this:push_back(node)
-      if self.__next then
-        self.__next.__prev = node
-      end
-      node.__next = self.__next
-      self.__next = node
-      node.__prev = self
-      return node
-    end
-
-    function this:push_front(node)
-      if self.__prev then
-        self.__prev.__next = node
-      end
-      node.__prev = self.__prev
-      self.__prev = node
-      node.__next = self
-      return node
-    end
-
-    function this:pop()
-      if self.__prev then self.__prev.__next = self.__next end
-      if self.__next then self.__next.__prev = self.__prev end
-    end
-
-    local function constructor(_, data)
-      local node = {}
-      node[0] = data
-      return setmetatable(node, meta)
-    end
-
-    return setmetatable(this, { __call = constructor })
-  end)()
-
+local list_t = (function()
   local this = {}
-  this.CONST_EMPTY_NODE_DATA = CONST_EMPTY_NODE_DATA
 
   ---@table initializer_list
   ---
@@ -301,7 +311,7 @@ local list_t = (function()
   ---@any data
   function this:assign(...)
     local args = { ... }
-    if #args == 1 and type(args[1]) == "table" then
+    if #args == 1 then
       self:clear()
       for _, v in ipairs(args[1]) do
         self:push_back(v)
@@ -335,7 +345,7 @@ local list_t = (function()
 
   ---@return [iterator_t]
   function this:begin()
-    return iterator_t(self.__impl.__next)
+    return iterator_t(self.__impl.__next, 0)
   end
 
   ---@return [const_iterator_t]
@@ -563,7 +573,7 @@ local list_t = (function()
     local args = { ... }
     if #args == 0 then
       local node = source.__impl.__next
-      while node and node[0] ~= CONST_EMPTY_NODE_DATA do
+      while node and not node:is_empty() do
         where.__data:push_front( node_t(node[0]) )
         local temp = node.__next
         node:pop()
@@ -573,7 +583,7 @@ local list_t = (function()
       end
     elseif #args == 1 then
       local node = args[1].__data
-      if node and node[0] ~= CONST_EMPTY_NODE_DATA then
+      if node and not node:is_empty()then
         where.__data:push_front( node_t(node[0]) )
         node:pop()
         source.__size = source.__size - 1
@@ -630,7 +640,8 @@ local list_t = (function()
   local function constructor(_, ...)
     local args = { ... }
     local list = {}
-    list.__impl = node_t(CONST_EMPTY_NODE_DATA)
+    list.__impl = node_t()
+    list.__impl:make_this_node_empty()
     list.__impl.__next = list.__impl
     list.__impl.__prev = list.__impl
     list.__size = 0
