@@ -290,8 +290,42 @@ local list_t = (function()
   end)()
 
   local this = {}
+  this.CONST_EMPTY_NODE_DATA = CONST_EMPTY_NODE_DATA
 
-  function this:assign()
+  ---@table initializer_list
+  ---
+  ---@any_iterator_t first
+  ---@any_iterator_t last
+  ---
+  ---@number count
+  ---@any data
+  function this:assign(...)
+    local args = { ... }
+    if #args == 1 and type(args[1]) == "table" then
+      self:clear()
+      for _, v in ipairs(args[1]) do
+        self:push_back(v)
+      end
+    elseif #args == 2 then
+      if
+        type(args[1]) == "table" and
+        args[1].__basetype == "iterator_t" and
+        type(args[2]) == "table" and
+        args[2].__basetype == "iterator_t"
+      then
+        self:clear()
+        while args[1] ~= args[2] do
+          local node = args[1].__data
+          self:push_back(node[0])
+          args[1] = args[1] + 1
+        end
+      else
+        self:clear()
+        for i = 1, args[1] do
+          self:push_back(args[2])
+        end
+      end
+    end
   end
 
   ---@return [node_t]
@@ -315,8 +349,8 @@ local list_t = (function()
   end
 
   function this:clear()
-    self.__impl.__next = nil
-    self.__impl.__prev = nil
+    self.__impl.__next = self.__impl
+    self.__impl.__prev = self.__impl
     self.__size = 0
   end
 
@@ -333,7 +367,7 @@ local list_t = (function()
   ---@any_iterator_t where
   ---@any data
   function this:emplace(where, data)
-    where.__data:push_back( node_t(data) )
+    where.__data:push_front( node_t(data) )
     self.__size = self.__size + 1
   end
 
@@ -369,6 +403,7 @@ local list_t = (function()
         local temp = first.__data
         first = first + 1
         temp:pop()
+        self.__size = self.__size - 1
       end
     else
       first.__data:pop()
@@ -403,19 +438,19 @@ local list_t = (function()
     if #args == 1 then
       if type(args[1]) == "table" then
         for _, v in ipairs(args[1]) do
-          where.__data:push_back( node_t(v) )
+          where.__data:push_front( node_t(v) )
           where = where + 1
           self.__size = self.__size + 1
         end
       else
-        where.__data:push_back( node_t(args[1]) )
+        where.__data:push_front( node_t(args[1]) )
         where = where + 1
         self.__size = self.__size + 1
       end
     elseif #args == 2 then
       if type(args[1]) == "number" then
         for i = 1, args[1] do
-          where.__data:push_back( node_t(args[2]) )
+          where.__data:push_front( node_t(args[2]) )
           where = where + 1
           self.__size = self.__size + 1
         end
@@ -424,6 +459,7 @@ local list_t = (function()
           local node = args[1].__data
           where.__data:push_front( node_t(node[0]) )
           args[1] = args[1] + 1
+          self.__size = self.__size + 1
         end
       end
     end
@@ -532,12 +568,16 @@ local list_t = (function()
         local temp = node.__next
         node:pop()
         node = temp
+        source.__size = source.__size - 1
+        self.__size = self.__size + 1
       end
     elseif #args == 1 then
       local node = args[1].__data
       if node and node[0] ~= CONST_EMPTY_NODE_DATA then
         where.__data:push_front( node_t(node[0]) )
         node:pop()
+        source.__size = source.__size - 1
+        self.__size = self.__size + 1
       end
     elseif #args == 2 then
       while args[1] ~= args[2] do
@@ -545,6 +585,8 @@ local list_t = (function()
         where.__data:push_front( node_t(node[0]) )
         args[1] = args[1] + 1
         node:pop()
+        source.__size = source.__size - 1
+        self.__size = self.__size + 1
       end
     end
   end
@@ -619,3 +661,5 @@ local list_t = (function()
 
   return setmetatable(this, { __call = constructor })
 end)()
+
+return list_t
