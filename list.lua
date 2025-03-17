@@ -194,6 +194,49 @@ local list_t = (function()
   this.__basetype = "list_t"
   this.__type     = "list_t"
 
+  local function __less_comp(a, b)
+    return a < b
+  end
+
+  local function __sort(left, right, comp)
+    local out = this()
+    local a = left:begin()
+    local b = right:begin()
+    while a ~= left:end_() and b ~= right:end_() do
+      if comp(a[0], b[0]) then
+        out:push_back(a[0])
+        a = a + 1
+      else
+        out:push_back(b[0])
+        b = b + 1
+      end
+    end
+    while a ~= left:end_() do
+      out:push_back(a[0])
+      a = a + 1
+    end
+    while b ~= right:end_() do
+      out:push_back(b[0])
+      b = b + 1
+    end
+    return out
+  end
+
+  local function __merge_sort(list, comp)
+    if list.__size < 2 then
+      return list
+    end
+    local mid = list:begin()
+    for i = 1, math.floor(list:size() / 2) do
+      mid = mid + 1
+    end
+    local left = this(list:begin(), mid)
+    local right = this(mid, list:end_())
+    left = __merge_sort(left, comp)
+    right = __merge_sort(right, comp)
+    return __sort(left, right, comp)
+  end
+
   ---// Erases elements from a list and places a new set of elements to a target list.
   ---@table initializer_list
   ---@return [nil]
@@ -408,7 +451,21 @@ local list_t = (function()
     error("cannot find an overload for 'insert' for passed arguments")
   end
 
-  function this:merge()
+  ---// Removes the elements from the argument list, inserts them into the target list, and orders the new, combined
+  ---// set of elements in ascending order or in some other specified order.
+  ---@list_t right
+  ---@return [nil]
+  ---
+  ---@list_t right
+  ---@function comp
+  ---@return [nil]
+  function this:merge(right, comp)
+    assert(type(right) == "table" and right.__basetype == "list_t", "bad argument #1 to 'merge' (list_t expected)")
+    assert(type(comp) == "nil" or type(comp) == "function", "bad argument #2 to 'merge' (function expected)")
+    self:insert(self:begin(), right:begin(), right:end_())
+    right:clear()
+    local temp = __merge_sort(self, comp or __less_comp)
+    self:assign(temp:begin(), temp:end_())
   end
 
   ---// Deletes the element at the end of a list.
@@ -505,7 +562,16 @@ local list_t = (function()
     return self.__size
   end
 
-  function this:sort()
+  ---// Arranges the elements of a list in ascending order or with respect to some other user-specified order.
+  ---@nil
+  ---@return [nil]
+  ---
+  ---@function comp
+  ---@return [nil]
+  function this:sort(comp)
+    assert(type(comp) == "nil" or type(comp) == "function", "bad argument #1 to 'sort' (function expected)")
+    local temp = __merge_sort(self, comp or __less_comp)
+    self:assign(temp:begin(), temp:end_())
   end
 
   ---// Removes elements from a source list and inserts them into a destination list.
@@ -639,7 +705,7 @@ local list_t = (function()
       then
         local iterator = args[1]
         while iterator ~= args[2] do
-          list:push_back(iterator[0][0])
+          list:push_back(iterator[0])
           iterator = iterator + 1
         end
         return list
