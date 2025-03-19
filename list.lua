@@ -147,7 +147,7 @@ local node_t = (function()
     return (a > 0) and self.__prev or self.__next
   end
 
-  function this:push_back(node)
+  function this:__push_back(node)
     if self.__next then
       self.__next.__prev = node
     end
@@ -157,7 +157,7 @@ local node_t = (function()
     return node
   end
 
-  function this:push_front(node)
+  function this:__push_front(node)
     if self.__prev then
       self.__prev.__next = node
     end
@@ -167,7 +167,7 @@ local node_t = (function()
     return node
   end
 
-  function this:pop()
+  function this:__pop()
     if self.__prev then self.__prev.__next = self.__next end
     if self.__next then self.__next.__prev = self.__prev end
   end
@@ -330,7 +330,7 @@ local list_t = (function()
   ---@return [nil]
   function this:emplace(where, data)
     assert(type(where) == "table" and where.__basetype == "iterator_t", "bad argument #1 to 'emplace' (any_iterator_t expected)")
-    where.__data:push_front( node_t(data) )
+    where.__data:__push_front( node_t(data) )
     self.__size = self.__size + 1
   end
 
@@ -338,7 +338,7 @@ local list_t = (function()
   ---@any data
   ---@return [nil]
   function this:emplace_back(data)
-    self.__impl:push_front( node_t(data) )
+    self.__impl:__push_front( node_t(data) )
     self.__size = self.__size + 1
   end
 
@@ -346,7 +346,7 @@ local list_t = (function()
   ---@any data
   ---@return [nil]
   function this:emplace_front(data)
-    self.__impl:push_back( node_t(data) )
+    self.__impl:__push_back( node_t(data) )
     self.__size = self.__size + 1
   end
 
@@ -376,12 +376,12 @@ local list_t = (function()
       while first ~= last do
         local temp = first.__data
         first = first + 1
-        temp:pop()
+        temp:__pop()
         self.__size = self.__size - 1
       end
       return first
     else
-      first.__data:pop()
+      first.__data:__pop()
       self.__size = self.__size - 1
       return first
     end
@@ -417,13 +417,13 @@ local list_t = (function()
     if #args == 1 then
       if type(args[1]) == "table" then
         for _, v in ipairs(args[1]) do
-          where.__data:push_front( node_t(v) )
+          where.__data:__push_front( node_t(v) )
           where = where + 1
           self.__size = self.__size + 1
         end
         return where
       else
-        where.__data:push_front( node_t(args[1]) )
+        where.__data:__push_front( node_t(args[1]) )
         where = where + 1
         self.__size = self.__size + 1
         return where
@@ -431,7 +431,7 @@ local list_t = (function()
     elseif #args == 2 then
       if type(args[1]) == "number" then
         for i = 1, args[1] do
-          where.__data:push_front( node_t(args[2]) )
+          where.__data:__push_front( node_t(args[2]) )
           where = where + 1
           self.__size = self.__size + 1
         end
@@ -441,7 +441,7 @@ local list_t = (function()
         assert(type(args[2]) == "table" and args[2].__basetype == "iterator_t", "bad argument #2 to 'insert' (any_iterator_t expected)")
         while args[1] ~= args[2] do
           local node = args[1].__data
-          where.__data:push_front( node_t(node[0]) )
+          where.__data:__push_front( node_t(node[0]) )
           args[1] = args[1] + 1
           self.__size = self.__size + 1
         end
@@ -472,7 +472,7 @@ local list_t = (function()
   ---@return [nil]
   function this:pop_back()
     if not self.__impl.__prev:is_empty() then
-      self.__impl.__prev:pop()
+      self.__impl.__prev:__pop()
       self.__size = self.__size - 1
     end
   end
@@ -481,7 +481,7 @@ local list_t = (function()
   ---@return [nil]
   function this:pop_front()
     if not self.__impl.__next:is_empty() then
-      self.__impl.__next:pop()
+      self.__impl.__next:__pop()
       self.__size = self.__size - 1
     end
   end
@@ -491,7 +491,7 @@ local list_t = (function()
   ---@return [nil]
   function this:push_back(data)
     local node = node_t(data)
-    self.__impl:push_front(node)
+    self.__impl:__push_front(node)
     self.__size = self.__size + 1
   end
 
@@ -500,7 +500,7 @@ local list_t = (function()
   ---@return [nil]
   function this:push_front(data)
     local node = node_t(data)
-    self.__impl:push_back(node)
+    self.__impl:__push_back(node)
     self.__size = self.__size + 1
   end
 
@@ -517,7 +517,7 @@ local list_t = (function()
     local node = self.__impl.__next
     while node ~= self.__impl do
       if node[0] == data then
-        node:pop()
+        node:__pop()
         self.__size = self.__size - 1
       end
       node = node.__next
@@ -532,7 +532,7 @@ local list_t = (function()
     local node = self.__impl.__next
     while node ~= self.__impl do
       if predicate(node[0]) then
-        node:pop()
+        node:__pop()
         self.__size = self.__size - 1
       end
       node = node.__next
@@ -596,9 +596,9 @@ local list_t = (function()
     if #args == 0 then
       local node = source.__impl.__next
       while node and not node:is_empty() do
-        where.__data:push_front( node_t(node[0]) )
+        where.__data:__push_front( node_t(node[0]) )
         local temp = node.__next
-        node:pop()
+        node:__pop()
         node = temp
         source.__size = source.__size - 1
         self.__size = self.__size + 1
@@ -609,7 +609,7 @@ local list_t = (function()
       local node = args[1].__data
       if node and not node:is_empty()then
         where.__data:push_front( node_t(node[0]) )
-        node:pop()
+        node:__pop()
         source.__size = source.__size - 1
         self.__size = self.__size + 1
       end
@@ -621,7 +621,7 @@ local list_t = (function()
         local node = args[1].__data
         where.__data:push_front( node_t(node[0]) )
         args[1] = args[1] + 1
-        node:pop()
+        node:__pop()
         source.__size = source.__size - 1
         self.__size = self.__size + 1
       end
@@ -650,7 +650,7 @@ local list_t = (function()
     local b = a.__next
     while not a:is_empty() do
       if predicate and predicate(a[0], b[0]) or (a[0] == b[0]) then
-        a:pop()
+        a:__pop()
         self.__size = self.__size - 1
       end
       a, b = b, b.__next
