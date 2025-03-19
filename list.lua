@@ -176,7 +176,7 @@ local node_t = (function()
     return self[0] == CONST_EMPTY_NODE_DATA
   end
 
-  function this:make_this_node_empty()
+  function this:__make_this_node_empty()
     self[0] = CONST_EMPTY_NODE_DATA
   end
 
@@ -678,7 +678,7 @@ local list_t = (function()
     local args = { ... }
     local list = {}
     list.__impl = node_t()
-    list.__impl:make_this_node_empty()
+    list.__impl:__make_this_node_empty()
     list.__impl.__next = list.__impl
     list.__impl.__prev = list.__impl
     list.__size = 0
